@@ -1,6 +1,6 @@
 
 # Build the manager binary
-FROM golang:1.21 AS builder
+FROM golang:1.22 AS builder
 
 #RUN #go env -w GOPROXY=https://goproxy.cn,direct
 # Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
@@ -16,7 +16,6 @@ COPY ../../cmd cmd/
 COPY ../../pkg/controllers controllers/
 COPY ../../pkg pkg/
 COPY ../../pkg/constant constant/
-COPY ../../plugins plugins/
 COPY ../../swaggerDocs swaggerDocs/
 
 

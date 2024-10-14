@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM  golang:1.21 AS builder
+FROM  golang:1.22 AS builder
 
 #ARG goproxy=https://goproxy.cn,direct
 #ENV GOPROXY=$goproxy
@@ -13,7 +13,6 @@ COPY ../../cmd cmd/
 COPY ../../pkg/controllers controllers/
 COPY ../../pkg pkg/
 COPY ../../pkg/constant constant/
-COPY ../../plugins plugins/
 COPY ../../swaggerDocs swaggerDocs/
 
 # Copy the Go Modules manifests

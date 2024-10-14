@@ -68,19 +68,9 @@ definitions:
           Annotations is an unstructured key value map stored with a resource that may be
           set by external tools to store and retrieve arbitrary metadata. They are not
           queryable and should be preserved when modifying objects.
-          More info: http://kubernetes.io/docs/user-guide/annotations
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
           +optional
         type: object
-      clusterName:
-        description: |-
-          Deprecated: ClusterName is a legacy field that was always cleared by
-          the system and never used; it will be removed completely in 1.25.
-
-          The name in the go struct is changed to help clients detect
-          accidental use.
-
-          +optional
-        type: string
       creationTimestamp:
         description: |-
           CreationTimestamp is a timestamp representing the server time when this object was
@@ -140,6 +130,7 @@ definitions:
           are not vulnerable to ordering changes in the list.
           +optional
           +patchStrategy=merge
+          +listType=set
         items:
           type: string
         type: array
@@ -172,7 +163,7 @@ definitions:
           Map of string keys and values that can be used to organize and categorize
           (scope and select) objects. May match selectors of replication controllers
           and services.
-          More info: http://kubernetes.io/docs/user-guide/labels
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
           +optional
         type: object
       managedFields:
@@ -186,6 +177,7 @@ definitions:
           workflow used when modifying the object.
 
           +optional
+          +listType=atomic
         items:
           $ref: '#/definitions/v1.ManagedFieldsEntry'
         type: array
@@ -196,7 +188,7 @@ definitions:
           automatically. Name is primarily intended for creation idempotence and configuration
           definition.
           Cannot be updated.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
           +optional
         type: string
       namespace:
@@ -208,7 +200,7 @@ definitions:
 
           Must be a DNS_LABEL.
           Cannot be updated.
-          More info: http://kubernetes.io/docs/user-guide/namespaces
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
           +optional
         type: string
       ownerReferences:
@@ -220,6 +212,8 @@ definitions:
           +optional
           +patchMergeKey=uid
           +patchStrategy=merge
+          +listType=map
+          +listMapKey=uid
         items:
           $ref: '#/definitions/v1.OwnerReference'
         type: array
@@ -250,7 +244,7 @@ definitions:
 
           Populated by the system.
           Read-only.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
           +optional
         type: string
     type: object
@@ -284,12 +278,12 @@ definitions:
       name:
         description: |-
           Name of the referent.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
         type: string
       uid:
         description: |-
           UID of the referent.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
         type: string
     type: object
   v1alpha2.Cluster:
@@ -325,13 +319,11 @@ definitions:
     type: object
   v1alpha2.ComponentResultItem:
     properties:
-      endpoint:
-        type: string
+      assert:
+        type: boolean
       level:
         $ref: '#/definitions/v1alpha2.Level'
       name:
-        type: string
-      namespace:
         type: string
     type: object
   v1alpha2.CustomCommandRule:
@@ -364,14 +356,16 @@ definitions:
     type: object
   v1alpha2.FileChangeResultItem:
     properties:
-      fileName:
-        type: string
+      assert:
+        type: boolean
       issues:
         items:
           type: string
         type: array
       level:
         $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
       nodeName:
         type: string
       path:
@@ -415,13 +409,6 @@ definitions:
       rule:
         type: string
     type: object
-  v1alpha2.FileSystemLabel:
-    properties:
-      mount:
-        type: string
-      type:
-        type: string
-    type: object
   v1alpha2.InspectPlan:
     properties:
       apiVersion:
@@ -460,11 +447,9 @@ definitions:
         type: integer
       one:
         type: string
-      ruleGroup:
-        type: string
       ruleNames:
         items:
-          type: string
+          $ref: '#/definitions/v1alpha2.InspectRuleNames'
         type: array
       schedule:
         type: string
@@ -552,6 +537,10 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha2.PrometheusResult'
         type: array
+      serviceConnectResult:
+        items:
+          $ref: '#/definitions/v1alpha2.ServiceConnectResultItem'
+        type: array
       sysctlResult:
         items:
           $ref: '#/definitions/v1alpha2.NodeMetricsResultItem'
@@ -604,10 +593,23 @@ definitions:
       status:
         $ref: '#/definitions/v1alpha2.InspectRuleStatus'
     type: object
+  v1alpha2.InspectRuleNames:
+    properties:
+      name:
+        type: string
+      nodeName:
+        type: string
+      nodeSelector:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   v1alpha2.InspectRuleSpec:
     properties:
-      component:
-        type: string
+      componentExclude:
+        items:
+          type: string
+        type: array
       customCommand:
         items:
           $ref: '#/definitions/v1alpha2.CustomCommandRule'
@@ -622,7 +624,7 @@ definitions:
         type: array
       nodeInfo:
         items:
-          $ref: '#/definitions/v1alpha2.NodeInfo'
+          $ref: '#/definitions/v1alpha2.NodeInfoRule'
         type: array
       opas:
         items:
@@ -634,6 +636,10 @@ definitions:
         type: array
       prometheusEndpoint:
         type: string
+      serviceConnect:
+        items:
+          $ref: '#/definitions/v1alpha2.ServiceConnectRule'
+        type: array
       sysctl:
         items:
           $ref: '#/definitions/v1alpha2.SysRule'
@@ -692,7 +698,7 @@ definitions:
         $ref: '#/definitions/v1alpha2.Policy'
       ruleNames:
         items:
-          type: string
+          $ref: '#/definitions/v1alpha2.InspectRuleNames'
         type: array
       timeout:
         type: string
@@ -748,16 +754,29 @@ definitions:
     - DangerLevel
     - WarningLevel
     - IgnoreLevel
-  v1alpha2.NodeInfo:
+  v1alpha2.NodeInfoResultItem:
+    properties:
+      assert:
+        type: boolean
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      nodeName:
+        type: string
+      resourcesType:
+        $ref: '#/definitions/v1alpha2.ResourcesType'
+      value:
+        type: string
+    type: object
+  v1alpha2.NodeInfoRule:
     properties:
       desc:
         type: string
       level:
         $ref: '#/definitions/v1alpha2.Level'
       mount:
-        items:
-          type: string
-        type: array
+        type: string
       name:
         type: string
       nodeName:
@@ -766,22 +785,9 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      resourcesType:
+        type: string
       rule:
-        type: string
-    type: object
-  v1alpha2.NodeInfoResultItem:
-    properties:
-      assert:
-        type: boolean
-      fileSystem:
-        $ref: '#/definitions/v1alpha2.FileSystemLabel'
-      level:
-        $ref: '#/definitions/v1alpha2.Level'
-      name:
-        type: string
-      nodeName:
-        type: string
-      value:
         type: string
     type: object
   v1alpha2.NodeMetricsResultItem:
@@ -838,8 +844,12 @@ definitions:
     - InspectTypeInstant
   v1alpha2.PrometheusResult:
     properties:
+      assert:
+        type: boolean
       level:
         $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
       result:
         type: string
     type: object
@@ -869,6 +879,13 @@ definitions:
           $ref: '#/definitions/v1alpha2.ResultItem'
         type: array
     type: object
+  v1alpha2.ResourcesType:
+    properties:
+      mount:
+        type: string
+      type:
+        type: string
+    type: object
   v1alpha2.ResultItem:
     properties:
       level:
@@ -892,6 +909,34 @@ definitions:
         type: integer
       warning:
         type: integer
+    type: object
+  v1alpha2.ServiceConnectResultItem:
+    properties:
+      assert:
+        type: boolean
+      endpoint:
+        type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      namespace:
+        type: string
+    type: object
+  v1alpha2.ServiceConnectRule:
+    properties:
+      desc:
+        type: string
+      level:
+        $ref: '#/definitions/v1alpha2.Level'
+      name:
+        type: string
+      namespace:
+        type: string
+      rule:
+        type: string
+      workspace:
+        type: string
     type: object
   v1alpha2.State:
     enum:
