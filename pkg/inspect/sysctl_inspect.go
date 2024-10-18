@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kubesphere/event-rule-engine/visitor"
 	kubeeyev1alpha2 "github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha2"
 	"github.com/kubesphere/kubeeye/pkg/constant"
@@ -106,7 +107,7 @@ func (o *sysctlInspect) GetResult(runNodeName string, resultCm *corev1.ConfigMap
 }
 
 func parseSysctlVal(val []string) string {
-	if len(val) == 0 && val == nil {
+	if len(val) == 0 || val == nil {
 		return ""
 	}
 	return val[0]
