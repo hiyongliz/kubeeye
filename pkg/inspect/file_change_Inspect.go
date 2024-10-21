@@ -60,12 +60,12 @@ func (f *fileChangeInspect) RunInspect(ctx context.Context, rules []kubeeyev1alp
 			continue
 		}
 		baseFileName := fmt.Sprintf("%s-%s", constant.BaseFilePrefix, file.Name)
-		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, baseFileName, metav1.GetOptions{})
+		baseConfig, configErr := clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Get(ctx, baseFileName, metav1.GetOptions{})
 		if configErr != nil {
 			klog.Errorf("Failed to open file. cause：file Do not exist,err:%s", configErr.Error())
 			if kubeErr.IsNotFound(configErr) {
-				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, constant.DefaultNamespace, baseFile, true)
-				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, mapTemplate, metav1.CreateOptions{})
+				mapTemplate := template.BinaryFileConfigMapTemplate(baseFileName, os.Getenv("KUBERNETES_POD_NAMESPACE"), baseFile, true)
+				_, createErr := clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Create(ctx, mapTemplate, metav1.CreateOptions{})
 				if createErr != nil {
 					klog.Errorf("create baseConfigMap failed err:%s", err.Error())
 					resultItem.Issues = []string{fmt.Sprintf("%s:create configMap failed", file.Name)}

@@ -161,6 +161,33 @@ func ParseOtherMetric(result *kubeeyev1alpha2.InspectResult) map[string][]map[st
 			p := r.ParseString()
 			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "node": p["instance"], "value": p["value"]})
 		}
+
+		// add new metric
+		// "node_pod_usage_ratio", "node_memory_usage_ratio", "node_cpu_usage_ratio", "cluster_pod_usage_ratio", "cluster_memory_usage_ratio", "cluster_cpu_usage_ratio"
+		if strings.ToLower(r.Name) == strings.ToLower("node_pod_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "node": p["node"], "value": p["value"]})
+		}
+		if strings.ToLower(r.Name) == strings.ToLower("node_memory_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "node": p["node"], "value": p["value"]})
+		}
+		if strings.ToLower(r.Name) == strings.ToLower("node_cpu_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "node": p["node"], "value": p["value"]})
+		}
+		if strings.ToLower(r.Name) == strings.ToLower("cluster_pod_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "value": p["value"]})
+		}
+		if strings.ToLower(r.Name) == strings.ToLower("cluster_memory_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "value": p["value"]})
+		}
+		if strings.ToLower(r.Name) == strings.ToLower("cluster_cpu_usage_ratio") {
+			p := r.ParseString()
+			otherMetricData[r.Name] = append(otherMetricData[r.Name], map[string]string{"cluster": result.Spec.InspectCluster.Name, "value": p["value"]})
+		}
 	}
 	return otherMetricData
 }
