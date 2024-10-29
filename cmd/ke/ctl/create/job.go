@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 type Options struct {
@@ -76,7 +77,6 @@ func (o *Options) Run(cmd context.Context) error {
 		return err
 	}
 
-
 	err = o.jobInspect(cmd)
 	if err != nil {
 		return fmt.Errorf("kubeeye inspect failed with error: %s,%v", err, err)
@@ -87,7 +87,7 @@ func (o *Options) Run(cmd context.Context) error {
 func (o *Options) jobInspect(ctx context.Context) error {
 	var jobRule []kubeeyev1alpha2.JobRule
 
-	rule, err := o.Clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})})
+	rule, err := o.Clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})})
 	if err != nil {
 		klog.Errorf("failed to get  inspect Rule. err:%s", err)
 		return err
@@ -109,8 +109,8 @@ func (o *Options) jobInspect(ctx context.Context) error {
 			return err
 		}
 		node := o.findJobRunNode(ctx)
-		resultConfigMap := template.BinaryConfigMapTemplate(o.ResultName, constant.DefaultNamespace, result, true, map[string]string{constant.LabelTaskName: o.TaskName, constant.LabelNodeName: node, constant.LabelRuleType: o.JobType})
-		_, err = o.Clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, resultConfigMap, v1.CreateOptions{})
+		resultConfigMap := template.BinaryConfigMapTemplate(o.ResultName, os.Getenv("KUBERNETES_POD_NAMESPACE"), result, true, map[string]string{constant.LabelTaskName: o.TaskName, constant.LabelNodeName: node, constant.LabelRuleType: o.JobType})
+		_, err = o.Clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Create(ctx, resultConfigMap, v1.CreateOptions{})
 		if err != nil {
 			return fmt.Errorf("create configMap failed. err:%s", err)
 		}
@@ -119,7 +119,7 @@ func (o *Options) jobInspect(ctx context.Context) error {
 }
 
 func (o *Options) findJobRunNode(ctx context.Context) string {
-	pods, err := o.Clients.ClientSet.CoreV1().Pods(constant.DefaultNamespace).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": o.ResultName})})
+	pods, err := o.Clients.ClientSet.CoreV1().Pods(os.Getenv("KUBERNETES_POD_NAMESPACE")).List(ctx, v1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{"job-name": o.ResultName})})
 	if err != nil {
 		klog.Error("failed to get pods ", err)
 		return ""

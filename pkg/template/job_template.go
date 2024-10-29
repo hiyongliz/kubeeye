@@ -5,6 +5,7 @@ import (
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 )
 
 func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
@@ -13,7 +14,7 @@ func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 	return &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      Job.JobName,
-			Namespace: constant.DefaultNamespace,
+			Namespace: os.Getenv("KUBERNETES_POD_NAMESPACE"),
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         Job.Task.APIVersion,
 				Kind:               Job.Task.Kind,
@@ -31,7 +32,7 @@ func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "inspect-job-pod",
-					Namespace:   constant.DefaultNamespace,
+					Namespace:   os.Getenv("KUBERNETES_POD_NAMESPACE"),
 					Labels:      map[string]string{constant.LabelPlanName: Job.Task.Labels[constant.LabelPlanName]},
 					Annotations: map[string]string{"container.apparmor.security.beta.kubernetes.io/inspect-task-kubeeye": "unconfined"},
 				},
@@ -42,6 +43,15 @@ func GeneratorJobTemplate(Job JobTemplateOptions) *v1.Job {
 						Image:   Job.JobConfig.Image,
 						Command: []string{"ke"},
 						Args:    []string{"create", "job", "--job-type", Job.RuleType, "--task-name", Job.Task.Name, "--result-name", Job.JobName},
+						Env: []corev1.EnvVar{corev1.EnvVar{
+							Name: "KUBERNETES_POD_NAMESPACE",
+							ValueFrom: &corev1.EnvVarSource{
+								FieldRef: &corev1.ObjectFieldSelector{
+									FieldPath: "metadata.namespace",
+								},
+							},
+						},
+						},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "proc",
 							ReadOnly:  true,
