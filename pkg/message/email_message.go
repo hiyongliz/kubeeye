@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/conf"
-	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/kubesphere/kubeeye/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,6 +14,7 @@ import (
 	"mime"
 	"net"
 	"net/smtp"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
@@ -158,7 +158,7 @@ type mailAuth struct {
 func (e *EmailMessageHandler) auth(authType string) (smtp.Auth, error) {
 	var secret corev1.Secret
 	err := e.Client.Get(context.TODO(), types.NamespacedName{
-		Namespace: constant.DefaultNamespace,
+		Namespace: os.Getenv("KUBERNETES_POD_NAMESPACE"),
 		Name:      e.SecretKey,
 	}, &secret)
 	if err != nil {

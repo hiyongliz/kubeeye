@@ -242,9 +242,9 @@ func (r *InspectTaskReconciler) GenerateResult(task *kubeeyev1alpha2.InspectTask
 	var ownerRefBol = true
 	resultName := fmt.Sprintf("%s-%s-result", cluster.Name, task.Name)
 
-	list, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
+	list, err := clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).List(context.TODO(), metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
 	if err == nil && len(list.Items) > 0 {
-		err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
+		err = clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelTaskName: task.Name})})
 		if err != nil {
 			klog.Error("failed to delete inspect result")
 		}
@@ -404,7 +404,7 @@ func computedDeployNum(nodeNum int, jobRulesNum int) int {
 func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Context, clients *kube.KubernetesClient, jobName string, jobPhase *kubeeyev1alpha2.JobPhase, timeout string) *kubeeyev1alpha2.JobPhase {
 	for {
 		klog.Infof("wait job run complete for name:%s", jobName)
-		jobInfo, err := clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Get(ctx, jobName, metav1.GetOptions{})
+		jobInfo, err := clients.ClientSet.BatchV1().Jobs(os.Getenv("KUBERNETES_POD_NAMESPACE")).Get(ctx, jobName, metav1.GetOptions{})
 		if err != nil {
 			klog.Infof("failed to get job info for name:%s,err:%s", jobName, err)
 			jobPhase.Phase = kubeeyev1alpha2.PhaseFailed
@@ -423,7 +423,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 		if jobInfo.Status.CompletionTime != nil && !jobInfo.Status.CompletionTime.IsZero() && jobInfo.Status.Active == 0 {
 			jobPhase.Phase = kubeeyev1alpha2.PhaseSucceeded
 			background := metav1.DeletePropagationBackground
-			err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
+			err = clients.ClientSet.BatchV1().Jobs(os.Getenv("KUBERNETES_POD_NAMESPACE")).Delete(ctx, jobName, metav1.DeleteOptions{PropagationPolicy: &background})
 			if err != nil {
 				klog.Infof("failed to delete job:%s , err:%s", jobName, err)
 			}
@@ -436,7 +436,7 @@ func (r *InspectTaskReconciler) waitForJobCompletionGetResult(ctx context.Contex
 }
 
 func (r *InspectTaskReconciler) getInspectResultData(ctx context.Context, clients *kube.KubernetesClient, resultData *kubeeyev1alpha2.InspectResult, jobName string) error {
-	configMap, err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, jobName,
+	configMap, err := clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Get(ctx, jobName,
 		metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -470,7 +470,7 @@ func (r *InspectTaskReconciler) getInspectResultData(ctx context.Context, client
 		return err
 	}
 
-	err = clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, jobName, metav1.DeleteOptions{})
+	err = clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Delete(ctx, jobName, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
@@ -514,12 +514,12 @@ func isTimeout(startTime metav1.Time, t string) bool {
 // InitClusterInspect Initialize the relevant configuration items required for multi-cluster inspection
 func (r *InspectTaskReconciler) initClusterInspectConfig(ctx context.Context, clients *kube.KubernetesClient) error {
 
-	_, err := clients.ClientSet.CoreV1().Namespaces().Get(ctx, constant.DefaultNamespace, metav1.GetOptions{})
+	_, err := clients.ClientSet.CoreV1().Namespaces().Get(ctx, os.Getenv("KUBERNETES_POD_NAMESPACE"), metav1.GetOptions{})
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			_, err = clients.ClientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   constant.DefaultNamespace,
+					Name:   os.Getenv("KUBERNETES_POD_NAMESPACE"),
 					Labels: map[string]string{"kubesphere.io/workspace": "system-workspace"},
 				}},
 				metav1.CreateOptions{})
@@ -542,7 +542,7 @@ func (r *InspectTaskReconciler) initClusterInspectConfig(ctx context.Context, cl
 		return err
 	}
 
-	_, err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Create(ctx, template.GetServiceAccountTemplate(), metav1.CreateOptions{})
+	_, err = clients.ClientSet.CoreV1().ServiceAccounts(os.Getenv("KUBERNETES_POD_NAMESPACE")).Create(ctx, template.GetServiceAccountTemplate(), metav1.CreateOptions{})
 	if err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
@@ -552,14 +552,14 @@ func (r *InspectTaskReconciler) initClusterInspectConfig(ctx context.Context, cl
 
 func (r *InspectTaskReconciler) cleanClusterInspectConfig(ctx context.Context, clients *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask) error {
 	// clean temp inspect rule
-	err := clients.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+	err := clients.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"}),
 	})
 	if err != nil && !kubeErr.IsNotFound(err) {
 		return err
 	}
 
-	err = clients.ClientSet.CoreV1().ServiceAccounts(constant.DefaultNamespace).Delete(ctx, template.GetServiceAccountTemplate().Name, metav1.DeleteOptions{})
+	err = clients.ClientSet.CoreV1().ServiceAccounts(os.Getenv("KUBERNETES_POD_NAMESPACE")).Delete(ctx, template.GetServiceAccountTemplate().Name, metav1.DeleteOptions{})
 	if err != nil && !kubeErr.IsNotFound(err) {
 		return err
 	}
@@ -630,7 +630,7 @@ func createInspectJob(ctx context.Context, clients *kube.KubernetesClient, jobRu
 		RuleType:  ruleType,
 	}
 
-	_, err = clients.ClientSet.BatchV1().Jobs(constant.DefaultNamespace).Create(ctx, template.GeneratorJobTemplate(o), metav1.CreateOptions{})
+	_, err = clients.ClientSet.BatchV1().Jobs(os.Getenv("KUBERNETES_POD_NAMESPACE")).Create(ctx, template.GeneratorJobTemplate(o), metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create Jobs  for node name:%s,err:%s", err, err)
 		return nil, err
@@ -688,7 +688,7 @@ func checkJobIsDeploy(allNode []corev1.Node, inComplete []corev1.Pod, job kubeey
 }
 
 func getIncompleteJob(ctx context.Context, kubeClient *kube.KubernetesClient, task *kubeeyev1alpha2.InspectTask, ruleType string) []corev1.Pod {
-	list, err := kubeClient.ClientSet.CoreV1().Pods(constant.DefaultNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelPlanName: task.Labels[constant.LabelPlanName], constant.LabelRuleType: ruleType})})
+	list, err := kubeClient.ClientSet.CoreV1().Pods(os.Getenv("KUBERNETES_POD_NAMESPACE")).List(ctx, metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{constant.LabelPlanName: task.Labels[constant.LabelPlanName], constant.LabelRuleType: ruleType})})
 	if err != nil {
 		klog.Error("failed to getIncompleteJob ")
 		return nil

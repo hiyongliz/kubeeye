@@ -1,10 +1,10 @@
 package template
 
 import (
-	"github.com/kubesphere/kubeeye/pkg/constant"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 )
 
 func GetClusterRoleTemplate() *rbacv1.ClusterRole {
@@ -48,7 +48,7 @@ func GetClusterRoleBindingTemplate() *rbacv1.ClusterRoleBinding {
 			Name: "kubeeye-inspect-rolebinding",
 		},
 		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: "kubeeye-inspect-job", Namespace: constant.DefaultNamespace},
+			{Kind: "ServiceAccount", Name: "kubeeye-inspect-job", Namespace: os.Getenv("KUBERNETES_POD_NAMESPACE")},
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -62,7 +62,7 @@ func GetServiceAccountTemplate() *v1.ServiceAccount {
 	return &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubeeye-inspect-job",
-			Namespace: constant.DefaultNamespace,
+			Namespace: os.Getenv("KUBERNETES_POD_NAMESPACE"),
 		},
 	}
 }

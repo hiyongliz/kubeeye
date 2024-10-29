@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 func RuleArrayDeduplication[T any](obj interface{}) []T {
@@ -289,13 +290,13 @@ func (e *ExecuteRule) CreateInspectRule(ctx context.Context, ruleGroup []kubeeye
 		return nil, err
 	}
 
-	_, err = e.KubeClient.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Get(ctx, e.Task.Name, metav1.GetOptions{})
+	_, err = e.KubeClient.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Get(ctx, e.Task.Name, metav1.GetOptions{})
 	if err == nil {
-		_ = e.KubeClient.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Delete(ctx, e.Task.Name, metav1.DeleteOptions{})
+		_ = e.KubeClient.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Delete(ctx, e.Task.Name, metav1.DeleteOptions{})
 	}
 	// create temp inspect rule
-	configMapTemplate := template.BinaryConfigMapTemplate(e.Task.Name, constant.DefaultNamespace, ruleData, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
-	_, err = e.KubeClient.ClientSet.CoreV1().ConfigMaps(constant.DefaultNamespace).Create(ctx, configMapTemplate, metav1.CreateOptions{})
+	configMapTemplate := template.BinaryConfigMapTemplate(e.Task.Name, os.Getenv("KUBERNETES_POD_NAMESPACE"), ruleData, true, map[string]string{constant.LabelInspectRuleGroup: "inspect-rule-temp"})
+	_, err = e.KubeClient.ClientSet.CoreV1().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Create(ctx, configMapTemplate, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

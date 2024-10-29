@@ -21,7 +21,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/kubesphere/kubeeye/clients/clientset/versioned"
 	"github.com/kubesphere/kubeeye/pkg/conf"
-	"github.com/kubesphere/kubeeye/pkg/constant"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/core"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -158,7 +158,7 @@ func GetMultiClusterClient(ctx context.Context, clients *KubernetesClient, clust
 }
 
 func GetKubeEyeConfig(c core.Interface) (kc conf.KubeEyeConfig, err error) {
-	kubeEyeCm, err := c.V1().ConfigMaps().Lister().ConfigMaps(constant.DefaultNamespace).Get("kubeeye-config")
+	kubeEyeCm, err := c.V1().ConfigMaps().Lister().ConfigMaps(os.Getenv("KUBERNETES_POD_NAMESPACE")).Get("kubeeye-config")
 	if err != nil {
 		klog.Errorf("failed to get kubeeye config, kubeeye config file do not exist. err:%s", err)
 		return kc, err
